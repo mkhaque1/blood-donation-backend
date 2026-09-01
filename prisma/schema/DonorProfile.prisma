@@ -19,6 +19,8 @@ model DonorProfile {
     updatedAt        DateTime   @updatedAt
     deletedAt        DateTime?
 
+    donations Donation[]
+
     @@index([bloodGroup, city, isAvailable])
 }
 
