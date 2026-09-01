@@ -1,0 +1,18 @@
+model User {
+    id               String            @id @default(uuid())
+    email            String            @unique
+    passwordHash     String?
+    provider         String            @default("credentials")
+    role             Role
+    isActive         Boolean           @default(true)
+    createdAt        DateTime          @default(now())
+    updatedAt        DateTime          @updatedAt
+    deletedAt        DateTime?
+    donorProfile     DonorProfile?
+    requesterProfile RequesterProfile?
+
+    refreshTokens RefreshToken[]
+
+    @@index([role])
+    @@index([email])
+}

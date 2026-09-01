@@ -1,0 +1,38 @@
+model DonorProfile {
+    id               String     @id @default(uuid())
+    userId           String     @unique
+    user             User       @relation(fields: [userId], references: [id])
+    fullName         String
+    phone            String
+    bloodGroup       BloodGroup
+    dateOfBirth      DateTime
+    weightKg         Float
+    city             String
+    area             String
+    latitude         Float?
+    longitude        Float?
+    isAvailable      Boolean    @default(true)
+    lastDonationDate DateTime?
+    totalDonations   Int        @default(0)
+    medicalNotes     String?
+    createdAt        DateTime   @default(now())
+    updatedAt        DateTime   @updatedAt
+    deletedAt        DateTime?
+
+    @@index([bloodGroup, city, isAvailable])
+}
+
+model RequesterProfile {
+    id               String    @id @default(uuid())
+    userId           String    @unique
+    user             User      @relation(fields: [userId], references: [id])
+    fullName         String
+    phone            String
+    organizationType String // "INDIVIDUAL" | "HOSPITAL"
+    organizationName String?
+    city             String
+    area             String
+    createdAt        DateTime  @default(now())
+    updatedAt        DateTime  @updatedAt
+    deletedAt        DateTime?
+}
