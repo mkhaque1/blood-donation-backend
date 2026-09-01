@@ -14,3 +14,41 @@ enum BloodGroup {
     O_POS
     O_NEG
 }
+
+enum RequestStatus {
+    PENDING_VERIFICATION
+    VERIFIED
+    MATCHING
+    DONOR_ASSIGNED
+    COMPLETED
+    CANCELLED
+    EXPIRED
+}
+
+enum UrgencyLevel {
+    NORMAL
+    URGENT
+    CRITICAL
+}
+
+enum DonationStatus {
+    PLEDGED
+    COMPLETED
+    CANCELLED
+    NO_SHOW
+}
+
+enum PaymentStatus {
+    PENDING
+    SUCCEEDED
+    FAILED
+    REFUNDED
+}
+
+enum NotificationType {
+    REQUEST_MATCH
+    REQUEST_VERIFIED
+    DONOR_ACCEPTED
+    REQUEST_COMPLETED
+    SYSTEM
+}

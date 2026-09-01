@@ -1,0 +1,30 @@
+model BloodRequest {
+    id           String        @id @default(uuid())
+    createdById  String
+    createdBy    User          @relation("RequestCreatedBy", fields: [createdById], references: [id])
+    patientName  String
+    bloodGroup   BloodGroup
+    unitsNeeded  Int
+    urgency      UrgencyLevel  @default(NORMAL)
+    hospitalName String
+    city         String
+    area         String
+    latitude     Float?
+    longitude    Float?
+    neededBy     DateTime
+    status       RequestStatus @default(PENDING_VERIFICATION)
+    isPriority   Boolean       @default(false)
+    notes        String?
+    verifiedById String?
+    verifiedAt   DateTime?
+    createdAt    DateTime      @default(now())
+    updatedAt    DateTime      @updatedAt
+    deletedAt    DateTime?
+
+    donations Donation[]
+    payments  Payment[]
+    auditLogs AuditLog[]
+
+    @@index([bloodGroup, city, status])
+    @@index([status, urgency])
+}

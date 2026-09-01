@@ -1,0 +1,17 @@
+model Payment {
+    id             String        @id @default(uuid())
+    userId         String
+    user           User          @relation(fields: [userId], references: [id])
+    bloodRequestId String?
+    bloodRequest   BloodRequest? @relation(fields: [bloodRequestId], references: [id])
+    provider       String        @default("stripe")
+    providerRef    String?       @unique
+    purpose        String
+    amountCents    Int
+    currency       String        @default("usd")
+    status         PaymentStatus @default(PENDING)
+    createdAt      DateTime      @default(now())
+    updatedAt      DateTime      @updatedAt
+
+    @@index([userId, status])
+}
