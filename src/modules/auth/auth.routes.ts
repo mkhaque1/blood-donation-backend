@@ -1,15 +1,14 @@
 import { Router } from 'express';
+import * as authController from './auth.controller';
 import { validateRequest } from '../../middlewares/validrequest';
-import {
-  registerSchema,
-  loginSchema,
-  refreshTokenSchema,
-} from './auth.validation';
+import { registerSchema } from './auth.validation';
 
 const router = Router();
 
-router.post('/register', validateRequest(registerSchema), (req, res) => {
-  res.json({ received: req.body });
-});
+router.post(
+  '/register',
+  validateRequest(registerSchema),
+  authController.register,
+);
 
 export default router;
