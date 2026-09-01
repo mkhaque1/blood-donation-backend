@@ -12,6 +12,11 @@ model User {
     requesterProfile RequesterProfile?
 
     refreshTokens RefreshToken[]
+    bloodRequests BloodRequest[] @relation("RequestCreatedBy")
+    donations     Donation[]     @relation("DonationByDonor")
+    payments      Payment[]
+    notifications Notification[]
+    auditLogs     AuditLog[]     @relation("AuditActor")
 
     @@index([role])
     @@index([email])
