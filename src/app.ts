@@ -1,5 +1,6 @@
 import express from 'express';
 import { prisma } from './config/prisma';
+import authRoutes from './modules/auth/auth.routes';
 
 const app = express();
 
@@ -15,5 +16,9 @@ app.get('/health', async (_req, res) => {
     .status(200)
     .json({ success: true, message: 'OK - API and database are healthy' });
 });
+
+// Routes
+
+app.use('/api/v1/auth', authRoutes);
 
 export default app;
