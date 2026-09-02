@@ -1,6 +1,10 @@
 import express from 'express';
 import { prisma } from './config/prisma';
 import authRoutes from './modules/auth/auth.routes';
+import {
+  globalErrorHandler,
+  notFoundHandler,
+} from './middlewares/errorHandler';
 
 const app = express();
 
@@ -20,5 +24,8 @@ app.get('/health', async (_req, res) => {
 // Routes
 
 app.use('/api/v1/auth', authRoutes);
+
+app.use(notFoundHandler);
+app.use(globalErrorHandler);
 
 export default app;
