@@ -30,3 +30,15 @@ export const getById = catchAsync(async (req: Request, res: Response) => {
     data: request,
   });
 });
+
+export const verify = catchAsync(async (req: Request, res: Response) => {
+  const request = await service.verifyBloodRequest(
+    req.params.id as string,
+    req.user!.userId,
+  );
+  sendSuccess(res, {
+    statusCode: 200,
+    message: 'Request verified and moved to matching',
+    data: request,
+  });
+});
