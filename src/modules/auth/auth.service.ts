@@ -3,6 +3,7 @@ import { prisma } from '../../config/prisma';
 import { ApiError } from '../../utils/apiError';
 import { signAccessToken, signRefreshToken } from '../../utils/jwt';
 import { Role } from '@prisma/client';
+import { verifyRefreshToken } from '../../utils/jwt';
 
 interface RegisterInput {
   email: string;
@@ -73,6 +74,49 @@ export async function registerUser(input: RegisterInput) {
   });
 
   return issueTokenPair(user.id, user.role);
+}
+
+export async function loginUser(email: string, password: string) {
+  const user = await prisma.user.findFirst({
+    where: { email, deletedAt: null },
+  });
+  if (!user || !user.passwordHash)
+    throw ApiError.unauthorized('Invalid email or password');
+  if (!user.isActive)
+    throw ApiError.forbidden('This account has been deactivated');
+
+  const isMatch = await bcrypt.compare(password, user.passwordHash);
+  if (!isMatch) throw ApiError.unauthorized('Invalid email or password');
+
+  return issueTokenPair(user.id, user.role);
+}
+
+export async function refreshAccessToken(token: string) {
+  let payload;
+  try {
+    payload = verifyRefreshToken(token);
+  } catch {
+    throw ApiError.unauthorized('Invalid or expired refresh token');
+  }
+
+  const stored = await prisma.refreshToken.findUnique({ where: { token } });
+  if (!stored || stored.revoked || stored.expiresAt < new Date()) {
+    throw ApiError.unauthorized('Refresh token is no longer valid');
+  }
+
+  // Rotate: revoke the old token, issue a brand new pair.
+  await prisma.refreshToken.update({
+    where: { id: stored.id },
+    data: { revoked: true },
+  });
+  return issueTokenPair(payload.userId, payload.role);
+}
+
+export async function logoutUser(token: string) {
+  await prisma.refreshToken.updateMany({
+    where: { token },
+    data: { revoked: true },
+  });
 }
 
 async function issueTokenPair(userId: string, role: Role) {
