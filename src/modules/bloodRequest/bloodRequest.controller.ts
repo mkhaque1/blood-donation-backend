@@ -42,3 +42,12 @@ export const verify = catchAsync(async (req: Request, res: Response) => {
     data: request,
   });
 });
+
+export const matches = catchAsync(async (req: Request, res: Response) => {
+  const donors = await service.findMatchingDonors(req.params.id as string);
+  sendSuccess(res, {
+    statusCode: 200,
+    message: 'Compatible donors found',
+    data: donors,
+  });
+});

@@ -18,6 +18,7 @@ router.post(
 );
 router.get('/', validateRequest(listBloodRequestsSchema), controller.list);
 router.get('/:id', controller.getById);
+router.get('/:id/matches', authorize('ADMIN', 'REQUESTER'), controller.matches);
 router.patch('/:id/verify', authorize('ADMIN'), controller.verify);
 
 export default router;

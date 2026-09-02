@@ -1,6 +1,10 @@
 import { prisma } from '../../config/prisma';
 import { ApiError } from '../../utils/apiError';
 import { BloodGroup, RequestStatus, UrgencyLevel } from '@prisma/client';
+import {
+  getCompatibleDonorGroups,
+  isDonorEligible,
+} from '../../utils/bloodCompatibility';
 
 interface CreateRequestInput {
   patientName: string;
@@ -84,4 +88,61 @@ export async function getBloodRequestById(id: string) {
   });
   if (!request) throw ApiError.notFound('Blood request not found');
   return request;
+}
+
+export async function verifyBloodRequest(id: string, adminId: string) {
+  const request = await getBloodRequestById(id);
+  if (request.status !== 'PENDING_VERIFICATION') {
+    throw ApiError.badRequest(
+      `Cannot verify a request in status ${request.status}`,
+    );
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.bloodRequest.update({
+      where: { id },
+      data: {
+        status: 'MATCHING',
+        verifiedById: adminId,
+        verifiedAt: new Date(),
+      },
+    });
+    await tx.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: 'REQUEST_VERIFIED',
+        targetType: 'BloodRequest',
+        targetId: id,
+        bloodRequestId: id,
+      },
+    });
+    return updated;
+  });
+}
+
+// Finds compatible, available, eligible donors in the same city as the request.
+export async function findMatchingDonors(requestId: string) {
+  const request = await getBloodRequestById(requestId);
+  const compatibleGroups = getCompatibleDonorGroups(request.bloodGroup);
+
+  const candidates = await prisma.donorProfile.findMany({
+    where: {
+      deletedAt: null,
+      isAvailable: true,
+      bloodGroup: { in: compatibleGroups },
+      city: { equals: request.city, mode: 'insensitive' },
+    },
+    take: 100,
+  });
+
+  // Eligibility (age/weight/last-donation) is checked in application code —
+  // keeps the database query itself simple and index-friendly.
+  return candidates.filter(
+    (donor) =>
+      isDonorEligible({
+        dateOfBirth: donor.dateOfBirth,
+        weightKg: donor.weightKg,
+        lastDonationDate: donor.lastDonationDate,
+      }).eligible,
+  );
 }
