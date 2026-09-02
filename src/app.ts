@@ -6,6 +6,7 @@ import {
   notFoundHandler,
 } from './middlewares/errorHandler';
 import { authenticate, authorize } from './middlewares/auth';
+import userRoutes from './modules/user/user.routes';
 
 const app = express();
 
@@ -25,16 +26,7 @@ app.get('/health', async (_req, res) => {
 // Routes
 
 app.use('/api/v1/auth', authRoutes);
-
-// temporary test route
-app.get(
-  '/api/v1/test/admin-only',
-  authenticate(),
-  authorize('ADMIN'),
-  (req, res) => {
-    res.json({ success: true, message: 'You are an admin', data: req.user });
-  },
-);
+app.use('/api/v1/users', userRoutes);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
