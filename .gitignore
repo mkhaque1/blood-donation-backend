@@ -3,4 +3,5 @@ node_modules/
 .env.local
 .env.development.local
 .dist
+dist/
 *.log
