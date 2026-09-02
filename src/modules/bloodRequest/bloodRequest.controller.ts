@@ -51,3 +51,15 @@ export const matches = catchAsync(async (req: Request, res: Response) => {
     data: donors,
   });
 });
+
+export const accept = catchAsync(async (req: Request, res: Response) => {
+  const donation = await service.acceptBloodRequest(
+    req.params.id as string,
+    req.user!.userId,
+  );
+  sendSuccess(res, {
+    statusCode: 201,
+    message: 'You have pledged to donate. Thank you!',
+    data: donation,
+  });
+});

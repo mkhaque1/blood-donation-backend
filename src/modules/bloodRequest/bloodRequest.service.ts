@@ -146,3 +146,61 @@ export async function findMatchingDonors(requestId: string) {
       }).eligible,
   );
 }
+
+// Donor accepts/pledges to a request. Transaction-safe against double-assignment.
+export async function acceptBloodRequest(
+  requestId: string,
+  donorUserId: string,
+) {
+  const request = await getBloodRequestById(requestId);
+  if (!['MATCHING', 'DONOR_ASSIGNED'].includes(request.status)) {
+    throw ApiError.badRequest('This request is not currently accepting donors');
+  }
+
+  const donorProfile = await prisma.donorProfile.findUnique({
+    where: { userId: donorUserId },
+  });
+  if (!donorProfile) throw ApiError.badRequest('Donor profile not found');
+
+  const eligibility = isDonorEligible({
+    dateOfBirth: donorProfile.dateOfBirth,
+    weightKg: donorProfile.weightKg,
+    lastDonationDate: donorProfile.lastDonationDate,
+  });
+  if (!eligibility.eligible) throw ApiError.badRequest(eligibility.reason!);
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const donation = await tx.donation.create({
+        data: {
+          bloodRequestId: requestId,
+          donorId: donorUserId,
+          donorProfileId: donorProfile.id,
+          status: 'PLEDGED',
+        },
+      });
+
+      await tx.bloodRequest.update({
+        where: { id: requestId },
+        data: { status: 'DONOR_ASSIGNED' },
+      });
+
+      await tx.notification.create({
+        data: {
+          userId: request.createdById,
+          type: 'DONOR_ACCEPTED',
+          title: 'A donor accepted your request',
+          message: `A compatible donor has pledged to donate for ${request.patientName}.`,
+        },
+      });
+
+      return donation;
+    });
+  } catch (err: any) {
+    // P2002 = Prisma's unique constraint violation code.
+    if (err.code === 'P2002') {
+      throw ApiError.conflict('You have already pledged to this request');
+    }
+    throw err;
+  }
+}

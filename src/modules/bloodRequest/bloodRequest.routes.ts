@@ -18,7 +18,8 @@ router.post(
 );
 router.get('/', validateRequest(listBloodRequestsSchema), controller.list);
 router.get('/:id', controller.getById);
-router.get('/:id/matches', authorize('ADMIN', 'REQUESTER'), controller.matches);
 router.patch('/:id/verify', authorize('ADMIN'), controller.verify);
+router.get('/:id/matches', authorize('ADMIN', 'REQUESTER'), controller.matches);
+router.post('/:id/accept', authorize('DONOR'), controller.accept);
 
 export default router;
