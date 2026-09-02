@@ -63,3 +63,30 @@ export const accept = catchAsync(async (req: Request, res: Response) => {
     data: donation,
   });
 });
+
+export const search = catchAsync(async (req: Request, res: Response) => {
+  const results = await service.searchBloodRequests(String(req.query.q ?? ''));
+  sendSuccess(res, {
+    statusCode: 200,
+    message: 'Search results',
+    data: results,
+  });
+});
+
+export const updateStatus = catchAsync(async (req: Request, res: Response) => {
+  const request = await service.updateBloodRequestStatus(
+    req.params.id as string,
+    req.body.status,
+    req.user!.userId,
+  );
+  sendSuccess(res, {
+    statusCode: 200,
+    message: 'Request status updated',
+    data: request,
+  });
+});
+
+export const remove = catchAsync(async (req: Request, res: Response) => {
+  await service.softDeleteBloodRequest(req.params.id as string);
+  sendSuccess(res, { statusCode: 200, message: 'Request cancelled' });
+});

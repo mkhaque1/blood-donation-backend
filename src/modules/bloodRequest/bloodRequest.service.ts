@@ -204,3 +204,76 @@ export async function acceptBloodRequest(
     throw err;
   }
 }
+
+export async function updateBloodRequestStatus(
+  id: string,
+  status: RequestStatus,
+  actorId: string,
+) {
+  const request = await getBloodRequestById(id);
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.bloodRequest.update({
+      where: { id },
+      data: { status },
+    });
+
+    // When a request is completed, close out any pledged donations
+    // and update each donor's history in the same transaction.
+    if (status === 'COMPLETED') {
+      const donations = await tx.donation.findMany({
+        where: { bloodRequestId: id, status: 'PLEDGED' },
+      });
+
+      for (const d of donations) {
+        await tx.donation.update({
+          where: { id: d.id },
+          data: { status: 'COMPLETED', completedAt: new Date() },
+        });
+        await tx.donorProfile.update({
+          where: { id: d.donorProfileId },
+          data: {
+            totalDonations: { increment: 1 },
+            lastDonationDate: new Date(),
+          },
+        });
+      }
+    }
+
+    await tx.auditLog.create({
+      data: {
+        actorId,
+        action: 'REQUEST_STATUS_CHANGED',
+        targetType: 'BloodRequest',
+        targetId: id,
+        bloodRequestId: id,
+        metadata: { from: request.status, to: status },
+      },
+    });
+
+    return updated;
+  });
+}
+
+export async function searchBloodRequests(q: string) {
+  return prisma.bloodRequest.findMany({
+    where: {
+      deletedAt: null,
+      OR: [
+        { patientName: { contains: q, mode: 'insensitive' } },
+        { hospitalName: { contains: q, mode: 'insensitive' } },
+        { city: { contains: q, mode: 'insensitive' } },
+        { area: { contains: q, mode: 'insensitive' } },
+      ],
+    },
+    take: 20,
+  });
+}
+
+export async function softDeleteBloodRequest(id: string) {
+  await getBloodRequestById(id);
+  return prisma.bloodRequest.update({
+    where: { id },
+    data: { deletedAt: new Date(), status: 'CANCELLED' },
+  });
+}
