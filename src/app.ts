@@ -7,6 +7,7 @@ import {
 } from './middlewares/errorHandler';
 import { authenticate, authorize } from './middlewares/auth';
 import userRoutes from './modules/user/user.routes';
+import donorRoutes from './modules/donor/donor.routes';
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.get('/health', async (_req, res) => {
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/donors', donorRoutes);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
