@@ -9,6 +9,7 @@ import { authenticate, authorize } from './middlewares/auth';
 import userRoutes from './modules/user/user.routes';
 import donorRoutes from './modules/donor/donor.routes';
 import bloodRequestRoutes from './modules/bloodRequest/bloodRequest.routes';
+import paymentRoutes from './modules/payment/payment.route';
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/donors', donorRoutes);
 app.use('/api/v1/blood-requests', bloodRequestRoutes);
+app.use('/api/v1/payments', paymentRoutes);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
