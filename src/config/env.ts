@@ -17,4 +17,9 @@ export const env = {
     refreshSecret: required('JWT_REFRESH_SECRET'),
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
   },
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY ?? '',
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+    priorityFeeCents: Number(process.env.PRIORITY_REQUEST_FEE_CENTS ?? 500),
+  },
 };
