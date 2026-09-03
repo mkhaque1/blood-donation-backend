@@ -1,0 +1,509 @@
+{
+  "info": {
+    "name": "Blood Donation & Emergency Assistance Platform API",
+    "description": "Full REST API for the Blood Donation & Emergency Assistance Platform.\n\n**Roles:** DONOR, REQUESTER, ADMIN\n\n**Response shape:**\n- Success: `{ \"success\": true, \"message\": \"...\", \"data\": {} }`\n- Error: `{ \"success\": false, \"message\": \"...\", \"errors\": [] }`\n\n**Auth:** Bearer token in the `Authorization` header. Run the Auth → Login requests first; they auto-save tokens into collection variables used everywhere else.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api/v1" },
+    { "key": "adminToken", "value": "" },
+    { "key": "donorToken", "value": "" },
+    { "key": "requesterToken", "value": "" },
+    { "key": "donorRefreshToken", "value": "" },
+    { "key": "bloodRequestId", "value": "" },
+    { "key": "paymentId", "value": "" },
+    { "key": "userId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/../health",
+            "description": "Confirms the API and database are both reachable. Not versioned, lives at /health."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Donor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.collectionVariables.set('donorToken', res.data.accessToken);",
+                  "  pm.collectionVariables.set('donorRefreshToken', res.data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"donor1@test.com\",\n  \"password\": \"SecurePass123\",\n  \"role\": \"DONOR\",\n  \"fullName\": \"Test Donor\",\n  \"phone\": \"01700000000\",\n  \"city\": \"Dhaka\",\n  \"area\": \"Mirpur\",\n  \"bloodGroup\": \"O_POS\",\n  \"dateOfBirth\": \"1998-05-14T00:00:00Z\",\n  \"weightKg\": 65\n}"
+            },
+            "description": "Creates a Donor account + DonorProfile in one transaction. Returns an access/refresh token pair."
+          }
+        },
+        {
+          "name": "Register Requester",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"requester1@test.com\",\n  \"password\": \"SecurePass123\",\n  \"role\": \"REQUESTER\",\n  \"fullName\": \"City Hospital Admin\",\n  \"phone\": \"01700000002\",\n  \"city\": \"Dhaka\",\n  \"area\": \"Mirpur\",\n  \"organizationType\": \"HOSPITAL\",\n  \"organizationName\": \"City Hospital\"\n}"
+            },
+            "description": "Creates a Requester account + RequesterProfile (represents a patient or hospital)."
+          }
+        },
+        {
+          "name": "Login (Donor)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.collectionVariables.set('donorToken', res.data.accessToken);",
+                  "  pm.collectionVariables.set('donorRefreshToken', res.data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"seed.donor@test.com\",\n  \"password\": \"DonorPass123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login (Requester)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.collectionVariables.set('requesterToken', res.data.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"seed.requester@test.com\",\n  \"password\": \"RequesterPass123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.collectionVariables.set('adminToken', res.data.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@blooddonation.test\",\n  \"password\": \"ChangeMe123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/refresh-token",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{donorRefreshToken}}\"\n}"
+            },
+            "description": "Rotates the refresh token: the old one is revoked and a new pair is issued."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/logout",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{donorRefreshToken}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users (any role)",
+      "item": [
+        {
+          "name": "Get My User",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{donorToken}}" }],
+            "url": "{{baseUrl}}/users/me"
+          }
+        },
+        {
+          "name": "Get My Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{requesterToken}}" }],
+            "url": "{{baseUrl}}/users/me/notifications"
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{requesterToken}}" }],
+            "url": "{{baseUrl}}/users/me/notifications/:id/read",
+            "variable": [{ "key": "id", "value": "PASTE_NOTIFICATION_ID" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Donors",
+      "item": [
+        {
+          "name": "Get My Donor Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{donorToken}}" }],
+            "url": "{{baseUrl}}/donors/me"
+          }
+        },
+        {
+          "name": "Update My Donor Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{donorToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/donors/me",
+            "body": { "mode": "raw", "raw": "{\n  \"area\": \"Gulshan\"\n}" }
+          }
+        },
+        {
+          "name": "Toggle My Availability",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{donorToken}}" }],
+            "url": "{{baseUrl}}/donors/me/availability"
+          }
+        },
+        {
+          "name": "My Donation History",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{donorToken}}" }],
+            "url": "{{baseUrl}}/donors/me/donations"
+          }
+        },
+        {
+          "name": "Discover Donors (Admin/Requester)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{requesterToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/donors/discover?city=Dhaka&bloodGroup=O_POS",
+              "host": ["{{baseUrl}}"],
+              "path": ["donors", "discover"],
+              "query": [
+                { "key": "city", "value": "Dhaka" },
+                { "key": "bloodGroup", "value": "O_POS" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Blood Requests",
+      "item": [
+        {
+          "name": "Create Blood Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) {",
+                  "  pm.collectionVariables.set('bloodRequestId', res.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{requesterToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/blood-requests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientName\": \"John Test\",\n  \"bloodGroup\": \"O_POS\",\n  \"unitsNeeded\": 2,\n  \"urgency\": \"URGENT\",\n  \"hospitalName\": \"City Hospital\",\n  \"city\": \"Dhaka\",\n  \"area\": \"Mirpur\",\n  \"neededBy\": \"2026-09-10T00:00:00Z\",\n  \"notes\": \"Surgery scheduled\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Blood Requests (paginate/filter/sort)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{requesterToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/blood-requests?page=1&limit=10&status=MATCHING&bloodGroup=O_POS&city=Dhaka&urgency=URGENT&sortBy=createdAt&sortOrder=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["blood-requests"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "MATCHING" },
+                { "key": "bloodGroup", "value": "O_POS" },
+                { "key": "city", "value": "Dhaka" },
+                { "key": "urgency", "value": "URGENT" },
+                { "key": "sortBy", "value": "createdAt" },
+                { "key": "sortOrder", "value": "desc" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Blood Requests",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{requesterToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/blood-requests/search?q=dhaka",
+              "host": ["{{baseUrl}}"],
+              "path": ["blood-requests", "search"],
+              "query": [{ "key": "q", "value": "dhaka" }]
+            }
+          }
+        },
+        {
+          "name": "Get Blood Request By Id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{requesterToken}}" }],
+            "url": "{{baseUrl}}/blood-requests/{{bloodRequestId}}"
+          }
+        },
+        {
+          "name": "Verify Blood Request (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/blood-requests/{{bloodRequestId}}/verify",
+            "description": "PENDING_VERIFICATION -> MATCHING. Admin only."
+          }
+        },
+        {
+          "name": "Find Matching Donors",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/blood-requests/{{bloodRequestId}}/matches",
+            "description": "Returns compatible, available, eligible donors in the request's city."
+          }
+        },
+        {
+          "name": "Accept / Pledge to Request (Donor)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{donorToken}}" }],
+            "url": "{{baseUrl}}/blood-requests/{{bloodRequestId}}/accept",
+            "description": "Transaction-safe. A second attempt by the same donor returns 409 Conflict (unique constraint on bloodRequestId+donorId)."
+          }
+        },
+        {
+          "name": "Update Request Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{requesterToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/blood-requests/{{bloodRequestId}}/status",
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"COMPLETED\"\n}" },
+            "description": "Marking COMPLETED closes out pledged donations and increments donor stats."
+          }
+        },
+        {
+          "name": "Cancel / Soft Delete Request",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{requesterToken}}" }],
+            "url": "{{baseUrl}}/blood-requests/{{bloodRequestId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Initiate Priority Fee Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.paymentId) {",
+                  "  pm.collectionVariables.set('paymentId', res.data.paymentId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{requesterToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/payments/initiate/priority-fee",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bloodRequestId\": \"{{bloodRequestId}}\"\n}"
+            },
+            "description": "Creates a real Stripe PaymentIntent. Returns a clientSecret for the client SDK to confirm payment."
+          }
+        },
+        {
+          "name": "Get Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{requesterToken}}" }],
+            "url": "{{baseUrl}}/payments/{{paymentId}}"
+          }
+        },
+        {
+          "name": "Stripe Webhook (server-to-server only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Stripe-Signature", "value": "PROVIDED_BY_STRIPE_AUTOMATICALLY" }
+            ],
+            "url": "{{baseUrl}}/payments/webhook",
+            "description": "Not called manually from Postman in practice — Stripe calls this directly. Included here for documentation completeness. Test with the Stripe CLI: `stripe trigger payment_intent.succeeded`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users?page=1&limit=20&role=DONOR",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "role", "value": "DONOR" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User Status (activate/deactivate)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/admin/users/{{userId}}/status",
+            "body": { "mode": "raw", "raw": "{\n  \"isActive\": false\n}" }
+          }
+        },
+        {
+          "name": "Remove User (soft delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/admin/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/admin/dashboard-stats"
+          }
+        },
+        {
+          "name": "Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/admin/audit-logs?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "audit-logs"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
