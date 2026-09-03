@@ -11,6 +11,7 @@ import donorRoutes from './modules/donor/donor.routes';
 import bloodRequestRoutes from './modules/bloodRequest/bloodRequest.routes';
 import paymentRoutes from './modules/payment/payment.route';
 import paymentWebhookRoutes from './modules/payment/payment.webhook.routes';
+import adminRoutes from './modules/admin/admin.routes';
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/donors', donorRoutes);
 app.use('/api/v1/blood-requests', bloodRequestRoutes);
 app.use('/api/v1/payments', paymentRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
