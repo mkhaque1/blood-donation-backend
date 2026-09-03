@@ -10,8 +10,11 @@ import userRoutes from './modules/user/user.routes';
 import donorRoutes from './modules/donor/donor.routes';
 import bloodRequestRoutes from './modules/bloodRequest/bloodRequest.routes';
 import paymentRoutes from './modules/payment/payment.route';
+import paymentWebhookRoutes from './modules/payment/payment.webhook.routes';
 
 const app = express();
+
+app.use('/api/v1/payments/webhook', paymentWebhookRoutes);
 
 app.use(express.json());
 

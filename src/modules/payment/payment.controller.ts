@@ -28,3 +28,13 @@ export const getStatus = catchAsync(async (req: Request, res: Response) => {
     data: payment,
   });
 });
+
+export const webhook = catchAsync(async (req: Request, res: Response) => {
+  const signature = req.headers['stripe-signature'] as string;
+  const result = await service.handleStripeWebhook(req.body, signature);
+  sendSuccess(res, {
+    statusCode: 200,
+    message: 'Webhook processed',
+    data: result,
+  });
+});

@@ -46,3 +46,50 @@ export async function getPaymentStatus(id: string, userId: string) {
   if (payment.userId !== userId) throw ApiError.forbidden('Not your payment');
   return payment;
 }
+
+// Called from the raw webhook route — verifies the signature, updates DB status.
+export async function handleStripeWebhook(rawBody: Buffer, signature: string) {
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(
+      rawBody,
+      signature,
+      env.stripe.webhookSecret,
+    );
+  } catch {
+    throw ApiError.badRequest('Invalid webhook signature');
+  }
+
+  switch (event.type) {
+    case 'payment_intent.succeeded': {
+      const intent = event.data.object as Stripe.PaymentIntent;
+      await prisma.payment.updateMany({
+        where: { providerRef: intent.id },
+        data: { status: 'SUCCEEDED' },
+      });
+      // If this was a priority-request fee, flag the linked request as priority.
+      if (
+        intent.metadata?.purpose === 'PRIORITY_REQUEST_FEE' &&
+        intent.metadata.bloodRequestId
+      ) {
+        await prisma.bloodRequest.update({
+          where: { id: intent.metadata.bloodRequestId },
+          data: { isPriority: true },
+        });
+      }
+      break;
+    }
+    case 'payment_intent.payment_failed': {
+      const intent = event.data.object as Stripe.PaymentIntent;
+      await prisma.payment.updateMany({
+        where: { providerRef: intent.id },
+        data: { status: 'FAILED' },
+      });
+      break;
+    }
+    default:
+      break; // ignore event types we don't care about
+  }
+
+  return { received: true };
+}
